@@ -15,9 +15,9 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #121212; color: white; }}
     
-    /* Boutons de réponse centrés et stylisés */
-    .stButton>button {{ 
-        width: 100%; 
+    /* Force les boutons à prendre TOUTE la largeur et à être bien centrés */
+    div.stButton > button {{
+        width: 100% !important;
         border-radius: 10px; 
         min-height: 3.5em; 
         height: auto; 
@@ -26,12 +26,15 @@ st.markdown(f"""
         font-weight: bold; 
         border: none;
         white-space: normal;
-        word-wrap: break-word;
-        padding: 10px;
+        display: block;
+        margin: 0 auto;
     }}
-    .stButton>button:hover {{ border: 2px solid {SENEGAL_JAUNE}; color: {SENEGAL_JAUNE}; }}
     
-    /* Style de la barre de progression native de Streamlit */
+    div.stButton > button:hover {{ 
+        border: 2px solid {SENEGAL_JAUNE} !important; 
+        color: {SENEGAL_JAUNE} !important; 
+    }}
+
     .stProgress > div > div > div > div {{ 
         background-image: linear-gradient(to right, {SENEGAL_VERT}, {SENEGAL_JAUNE}, {SENEGAL_ROUGE}); 
     }}
@@ -44,7 +47,6 @@ st.markdown(f"""
     h1, h2, h3, p {{ text-align: center !important; color: white; }}
     h1, h2, h3 {{ color: {SENEGAL_JAUNE} !important; }}
     
-    /* Centrage du champ de saisie */
     .stTextInput > div > div > input {{ text-align: center; }}
     </style>
     """, unsafe_allow_html=True)
@@ -136,18 +138,18 @@ elif st.session_state.state == "QUIZ":
     qs = st.session_state.questions_partie
     current_q = qs[st.session_state.idx]
     
-    # --- LA BARRE DE PROGRESSION ---
     st.write(f"DIAGNOSTIC {st.session_state.idx + 1} / {len(qs)}")
     st.progress((st.session_state.idx + 1) / len(qs))
     
-    # Bloc Question Centré
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
     
-    # Options (Alignées au milieu grâce aux colonnes)
-    for opt in current_q["options"]:
-        col_l, col_btn, col_r = st.columns([1, 6, 1])
-        with col_btn:
+    # --- LA CORRECTION EST ICI ---
+    # On crée une colonne centrale large pour que les boutons s'étendent bien au milieu
+    _, col_centrale, _ = st.columns([1, 4, 1])
+    
+    with col_centrale:
+        for opt in current_q["options"]:
             if st.button(opt, key=f"q_{st.session_state.idx}_{opt}"):
                 if opt == current_q["reponse"]:
                     st.session_state.score += 1
