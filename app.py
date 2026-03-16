@@ -15,23 +15,25 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #121212; color: white; }}
     
-    /* FORCE L'HARMONIE DES BOUTONS */
-    div.stButton > button {{
-        width: 100% !important; /* Prend toute la largeur de la colonne */
-        display: block;
-        margin: 0 auto;
-        border-radius: 10px; 
-        min-height: 3.5em; 
-        height: auto; 
-        background-color: {SENEGAL_VERT}; 
-        color: white; 
-        font-weight: bold; 
-        border: none;
-        white-space: normal; /* Permet au texte long de revenir à la ligne */
-        padding: 10px;
+    /* Ciblage ultra-précis pour forcer la largeur identique */
+    button[kind="primary"], button[kind="secondary"] {{
+        width: 100% !important;
+        border-radius: 10px !important; 
+        min-height: 3.5em !important; 
+        background-color: {SENEGAL_VERT} !important; 
+        color: white !important; 
+        font-weight: bold !important; 
+        border: none !important;
+        white-space: normal !important;
+        padding: 10px !important;
+        display: block !important;
     }}
     
-    div.stButton > button:hover {{ 
+    .stButton {{
+        width: 100% !important;
+    }}
+
+    .stButton>button:hover {{ 
         border: 2px solid {SENEGAL_JAUNE} !important; 
         color: {SENEGAL_JAUNE} !important; 
     }}
@@ -78,7 +80,7 @@ def get_leaderboard_data():
 
 def add_score_data(pseudo, score):
     try:
-        conn = sqlite3.connect("scores.db", check_same_thread=False)
+        conn = sqlite3.connect("scores.db", connect_timeout=5, check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO leaderboard (pseudo, score) VALUES (?, ?)", (pseudo, score))
         conn.commit()
@@ -145,14 +147,13 @@ elif st.session_state.state == "QUIZ":
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
     
-    # --- CENTRAGE HARMONIEUX ---
-    # On utilise une colonne centrale pour définir la largeur de tous les boutons
-    _, col_centrale, _ = st.columns([1, 4, 1])
+    # On utilise des colonnes pour encadrer le bloc de boutons
+    _, col_centrale, _ = st.columns([0.5, 4, 0.5])
     
     with col_centrale:
+        # L'astuce est de mettre chaque bouton dans son propre container pour qu'ils s'empilent proprement
         for opt in current_q["options"]:
-            # Chaque bouton prendra maintenant 100% de 'col_centrale'
-            if st.button(opt, key=f"q_{st.session_state.idx}_{opt}"):
+            if st.button(opt, key=f"q_{st.session_state.idx}_{opt}", use_container_width=True):
                 if opt == current_q["reponse"]:
                     st.session_state.score += 1
                 else:
@@ -193,7 +194,7 @@ elif st.session_state.state == "VERDICT":
                 <span style="color:{SENEGAL_VERT}">✔ Vérité : {err['t']}</span><br>
                 <small><i>Note : {err['e']}</i></small></div>""", unsafe_allow_html=True)
 
-    if st.button("RETOUR AU MENU"):
+    if st.button("RETOUR AU MENU", use_container_width=True):
         if 'score_saved' in st.session_state: del st.session_state.score_saved
         st.session_state.state = "MENU"
         st.rerun()
