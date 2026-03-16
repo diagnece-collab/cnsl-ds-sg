@@ -3,6 +3,7 @@ import sqlite3
 import random
 import json
 import os
+from datetime import datetime
 
 # --- CONFIGURATION & STYLE SÉNÉGAL ---
 st.set_page_config(page_title="Conseil des Sages - Web", page_icon="🇸🇳", layout="centered")
@@ -15,7 +16,6 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #121212; color: white; }}
     
-    /* Ciblage ultra-précis pour forcer la largeur identique */
     button[kind="primary"], button[kind="secondary"] {{
         width: 100% !important;
         border-radius: 10px !important; 
@@ -29,18 +29,26 @@ st.markdown(f"""
         display: block !important;
     }}
     
-    .stButton {{
-        width: 100% !important;
-    }}
-
-    .stButton>button:hover {{ 
-        border: 2px solid {SENEGAL_JAUNE} !important; 
-        color: {SENEGAL_JAUNE} !important; 
-    }}
+    .stButton {{ width: 100% !important; }}
+    .stButton>button:hover {{ border: 2px solid {SENEGAL_JAUNE} !important; color: {SENEGAL_JAUNE} !important; }}
 
     .stProgress > div > div > div > div {{ 
         background-image: linear-gradient(to right, {SENEGAL_VERT}, {SENEGAL_JAUNE}, {SENEGAL_ROUGE}); 
     }}
+    
+    /* STYLE DU PERMIS DE VOTER */
+    .permis-card {{
+        border: 5px double {SENEGAL_JAUNE};
+        background-color: #f9f9f9;
+        color: #1a1a1a;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        margin: 20px 0;
+        background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+    }}
+    .permis-header {{ color: {SENEGAL_VERT}; font-weight: bold; font-size: 24px; margin-bottom: 10px; }}
+    .permis-pseudo {{ font-family: 'Courier New', Courier, monospace; font-size: 28px; font-weight: bold; border-bottom: 2px solid #333; display: inline-block; padding: 0 20px; }}
     
     .err-container {{
         padding: 15px; background-color: #1A1A1A; border-radius: 10px; 
@@ -80,7 +88,7 @@ def get_leaderboard_data():
 
 def add_score_data(pseudo, score):
     try:
-        conn = sqlite3.connect("scores.db", connect_timeout=5, check_same_thread=False)
+        conn = sqlite3.connect("scores.db", check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO leaderboard (pseudo, score) VALUES (?, ?)", (pseudo, score))
         conn.commit()
@@ -114,7 +122,6 @@ if st.session_state.state == "MENU":
         st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Flag_of_Senegal.svg/1200px-Flag_of_Senegal.svg.png", width=100)
     
     st.title("CONSEIL DES SAGES")
-    
     p_input = st.text_input("Votre Pseudo", placeholder="Entrez votre nom...")
     
     if st.button("ENTRER DANS LE CONSEIL"):
@@ -147,11 +154,8 @@ elif st.session_state.state == "QUIZ":
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
     
-    # On utilise des colonnes pour encadrer le bloc de boutons
     _, col_centrale, _ = st.columns([0.5, 4, 0.5])
-    
     with col_centrale:
-        # L'astuce est de mettre chaque bouton dans son propre container pour qu'ils s'empilent proprement
         for opt in current_q["options"]:
             if st.button(opt, key=f"q_{st.session_state.idx}_{opt}", use_container_width=True):
                 if opt == current_q["reponse"]:
@@ -163,7 +167,6 @@ elif st.session_state.state == "QUIZ":
                         "t": current_q["reponse"],
                         "e": current_q.get("explication", "La vérité est établie par le Conseil.")
                     })
-                
                 st.session_state.idx += 1
                 if st.session_state.idx >= len(qs):
                     st.session_state.state = "VERDICT"
@@ -177,22 +180,40 @@ elif st.session_state.state == "VERDICT":
         st.session_state.score_saved = True
 
     total = len(st.session_state.questions_partie)
-    admis = (st.session_state.score / total) >= 0.75 if total > 0 else False
-    color = SENEGAL_VERT if admis else SENEGAL_ROUGE
-
-    st.write(f"Citoyen **{st.session_state.pseudo}**, score : **{st.session_state.score} / {total}**")
+    score_final = st.session_state.score
+    admis = (score_final / total) >= 0.75 if total > 0 else False
     
-    st.markdown(f"""<div style="background-color:{color}; padding:20px; border-radius:15px; text-align:center; font-weight:bold; font-size:22px; color:white; margin-bottom:20px;">
-        {"ADMIS AU VOTE" if admis else "CAPACITÉ REJETÉE"}</div>""", unsafe_allow_html=True)
+    st.write(f"Citoyen **{st.session_state.pseudo}**, score : **{score_final} / {total}**")
+
+    if admis:
+        # --- GÉNÉRATION DU PERMIS ---
+        date_jour = datetime.now().strftime("%d/%m/%Y")
+        st.markdown(f"""
+            <div class="permis-card">
+                <div style="color:{SENEGAL_ROUGE}; font-weight:bold;">RÉPUBLIQUE DU SÉNÉGAL</div>
+                <div class="permis-header">CARTE D'APTITUDE AU VOTE</div>
+                <p>Le Conseil des Sages certifie que</p>
+                <div class="permis-pseudo">{st.session_state.pseudo}</div>
+                <p>est déclaré <b>APTE</b> à participer aux décisions de la Nation.</p>
+                <div style="margin-top:20px; font-size:12px; border-top:1px solid #ccc; padding-top:10px;">
+                    Délivré le {date_jour} • Sagesse, Justice, Unité
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.success("Félicitations ! Vous avez prouvé votre sagesse.")
+    else:
+        st.markdown(f"""<div style="background-color:{SENEGAL_ROUGE}; padding:20px; border-radius:15px; text-align:center; font-weight:bold; font-size:22px; color:white; margin-bottom:20px;">
+            CAPACITÉ REJETÉE</div>""", unsafe_allow_html=True)
+        st.warning("Le Conseil estime que vos connaissances doivent être approfondies.")
 
     if st.session_state.erreurs_commises:
-        st.subheader("ANALYSES DES ÉCARTS")
-        for err in st.session_state.erreurs_commises:
-            st.markdown(f"""<div class="err-container">
-                <b>Question :</b> {err['q']}<br>
-                <span style="color:{SENEGAL_ROUGE}">✘ Réponse : {err['v']}</span><br>
-                <span style="color:{SENEGAL_VERT}">✔ Vérité : {err['t']}</span><br>
-                <small><i>Note : {err['e']}</i></small></div>""", unsafe_allow_html=True)
+        with st.expander("VOIR LES ÉCARTS À RECTIFIER"):
+            for err in st.session_state.erreurs_commises:
+                st.markdown(f"""<div class="err-container">
+                    <b>Question :</b> {err['q']}<br>
+                    <span style="color:{SENEGAL_ROUGE}">✘ Réponse : {err['v']}</span><br>
+                    <span style="color:{SENEGAL_VERT}">✔ Vérité : {err['t']}</span><br>
+                    <small><i>Note : {err['e']}</i></small></div>""", unsafe_allow_html=True)
 
     if st.button("RETOUR AU MENU", use_container_width=True):
         if 'score_saved' in st.session_state: del st.session_state.score_saved
