@@ -15,9 +15,11 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #121212; color: white; }}
     
-    /* Force les boutons à prendre TOUTE la largeur et à être bien centrés */
+    /* FORCE L'HARMONIE DES BOUTONS */
     div.stButton > button {{
-        width: 100% !important;
+        width: 100% !important; /* Prend toute la largeur de la colonne */
+        display: block;
+        margin: 0 auto;
         border-radius: 10px; 
         min-height: 3.5em; 
         height: auto; 
@@ -25,9 +27,8 @@ st.markdown(f"""
         color: white; 
         font-weight: bold; 
         border: none;
-        white-space: normal;
-        display: block;
-        margin: 0 auto;
+        white-space: normal; /* Permet au texte long de revenir à la ligne */
+        padding: 10px;
     }}
     
     div.stButton > button:hover {{ 
@@ -144,12 +145,13 @@ elif st.session_state.state == "QUIZ":
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
     
-    # --- LA CORRECTION EST ICI ---
-    # On crée une colonne centrale large pour que les boutons s'étendent bien au milieu
+    # --- CENTRAGE HARMONIEUX ---
+    # On utilise une colonne centrale pour définir la largeur de tous les boutons
     _, col_centrale, _ = st.columns([1, 4, 1])
     
     with col_centrale:
         for opt in current_q["options"]:
+            # Chaque bouton prendra maintenant 100% de 'col_centrale'
             if st.button(opt, key=f"q_{st.session_state.idx}_{opt}"):
                 if opt == current_q["reponse"]:
                     st.session_state.score += 1
