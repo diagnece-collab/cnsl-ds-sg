@@ -19,11 +19,15 @@ st.markdown(f"""
     .stButton>button {{ 
         width: 100%; 
         border-radius: 10px; 
-        height: 3.5em; 
+        min-height: 3.5em; 
+        height: auto; 
         background-color: {SENEGAL_VERT}; 
         color: white; 
         font-weight: bold; 
         border: none;
+        white-space: normal;
+        word-wrap: break-word;
+        padding: 10px;
     }}
     .stButton>button:hover {{ border: 2px solid {SENEGAL_JAUNE}; color: {SENEGAL_JAUNE}; }}
     
@@ -140,23 +144,25 @@ elif st.session_state.state == "QUIZ":
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
     
-    # Options (Alignées au milieu)
+    # Options (Alignées au milieu grâce aux colonnes)
     for opt in current_q["options"]:
-        if st.button(opt, key=f"q_{st.session_state.idx}_{opt}"):
-            if opt == current_q["reponse"]:
-                st.session_state.score += 1
-            else:
-                st.session_state.erreurs_commises.append({
-                    "q": current_q["q"],
-                    "v": opt,
-                    "t": current_q["reponse"],
-                    "e": current_q.get("explication", "La vérité est établie par le Conseil.")
-                })
-            
-            st.session_state.idx += 1
-            if st.session_state.idx >= len(qs):
-                st.session_state.state = "VERDICT"
-            st.rerun()
+        col_l, col_btn, col_r = st.columns([1, 6, 1])
+        with col_btn:
+            if st.button(opt, key=f"q_{st.session_state.idx}_{opt}"):
+                if opt == current_q["reponse"]:
+                    st.session_state.score += 1
+                else:
+                    st.session_state.erreurs_commises.append({
+                        "q": current_q["q"],
+                        "v": opt,
+                        "t": current_q["reponse"],
+                        "e": current_q.get("explication", "La vérité est établie par le Conseil.")
+                    })
+                
+                st.session_state.idx += 1
+                if st.session_state.idx >= len(qs):
+                    st.session_state.state = "VERDICT"
+                st.rerun()
 
 elif st.session_state.state == "VERDICT":
     st.title("⚖️ VERDICT SOUVERAIN")
