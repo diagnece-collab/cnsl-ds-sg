@@ -3,6 +3,7 @@ import sqlite3
 import random
 import json
 import os
+import time  # Import ajouté pour le chrono
 from datetime import datetime
 
 # --- CONFIGURATION & STYLE SÉNÉGAL ---
@@ -112,6 +113,7 @@ if 'state' not in st.session_state:
     st.session_state.idx = 0
     st.session_state.questions_partie = []
     st.session_state.erreurs_commises = []
+    st.session_state.start_time = 0 # Initialisation du chrono
 
 banque_complete = charger_questions()
 
@@ -136,6 +138,7 @@ if st.session_state.state == "MENU":
             st.session_state.erreurs_commises = []
             st.session_state.questions_partie = random.sample(banque_complete, min(len(banque_complete), 20))
             st.session_state.state = "QUIZ"
+            st.session_state.start_time = time.time() # On lance le chrono au début du quiz
             st.rerun()
 
     st.divider()
@@ -147,9 +150,32 @@ if st.session_state.state == "MENU":
 elif st.session_state.state == "QUIZ":
     qs = st.session_state.questions_partie
     current_q = qs[st.session_state.idx]
+
+    # --- LOGIQUE DU CHRONOMÈTRE (20 SECONDES) ---
+    TEMPS_LIMITE = 20
+    temps_ecoule = time.time() - st.session_state.start_time
+    temps_restant = max(0, TEMPS_LIMITE - temps_ecoule)
     
     st.write(f"DIAGNOSTIC {st.session_state.idx + 1} / {len(qs)}")
     st.progress((st.session_state.idx + 1) / len(qs))
+    
+    # Affichage du temps restant
+    st.write(f"⏱️ Temps restant : {int(temps_restant)}s")
+    st.progress(temps_restant / TEMPS_LIMITE)
+
+    # Si le temps est écoulé
+    if temps_restant <= 0:
+        st.session_state.erreurs_commises.append({
+            "q": current_q["q"],
+            "v": "TEMPS ÉCOULÉ",
+            "t": current_q["reponse"],
+            "e": "La réflexion a dépassé le temps imparti par le Conseil."
+        })
+        st.session_state.idx += 1
+        st.session_state.start_time = time.time() # Reset pour la suivante
+        if st.session_state.idx >= len(qs):
+            st.session_state.state = "VERDICT"
+        st.rerun()
     
     st.markdown(f"""<div style="padding:20px; border-radius:15px; background-color:#1E1E1E; border:1px solid #333333; text-align:center; margin-bottom:20px;">
         <h3>{current_q['q']}</h3></div>""", unsafe_allow_html=True)
@@ -168,9 +194,14 @@ elif st.session_state.state == "QUIZ":
                         "e": current_q.get("explication", "La vérité est établie par le Conseil.")
                     })
                 st.session_state.idx += 1
+                st.session_state.start_time = time.time() # Reset pour la suivante
                 if st.session_state.idx >= len(qs):
                     st.session_state.state = "VERDICT"
                 st.rerun()
+    
+    # Rafraîchir l'interface pour le décompte
+    time.sleep(1)
+    st.rerun()
 
 elif st.session_state.state == "VERDICT":
     st.title("⚖️ VERDICT SOUVERAIN")
